@@ -12,6 +12,10 @@
 typedef enum {false, true} bool;
 typedef enum {TOGGLE, TURN_OFF, TURN_ON} inst;
 
+// ****************************** //
+//         UTIL FUNCTIONS         //
+// ****************************** //
+
 // This function splits the instruction line in tokens separed by a " "
 void split_instruction_line(char* in_line, char** tokens) {
   char* token;
@@ -51,6 +55,10 @@ void get_affected_rnc(char* from_str, char* to_str, unsigned int** rnc_mat) {
   str_to_num(to_str, rnc_mat[1]);
 
 }
+
+// ****************************** //
+//      INSTRUCTION HANDLERS      //
+// ****************************** //
 
 // This function handles the toggle operation
 int handle_toggle(unsigned int** idx_mat, int** lights, bool first_part) {
@@ -127,6 +135,10 @@ int handle_turn_on(unsigned int** idx_mat, int** lights, bool first_part) {
 
   return switched_on;
 }
+
+// ****************************** //
+// FIRST AND SECOND PART SOLVERS  //
+// ****************************** //
 
 // Function to handle the soluion of the first part of the riddle
 void first_part_solver(FILE* input, int** lights) {
