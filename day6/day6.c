@@ -53,7 +53,7 @@ void get_affected_rnc(char* from_str, char* to_str, unsigned int** rnc_mat) {
 }
 
 // This function handles the toggle operation
-int handle_toggle(unsigned int** idx_mat, int** lights) {
+int handle_toggle(unsigned int** idx_mat, int** lights, bool first_part) {
   int switched = 0;
   unsigned int r0 = idx_mat[0][0];
   unsigned int c0 = idx_mat[0][1];
@@ -62,13 +62,18 @@ int handle_toggle(unsigned int** idx_mat, int** lights) {
 
   for (int i = r0; i <= r1; ++i) {
     for (int j = c0; j <= c1; ++j) {
-      if (lights[i][j]) {
-        //If light is on, turn off
-        lights[i][j] = 0;
-        --switched;
+      if (first_part) {
+        if (lights[i][j]) {
+          //If light is on, turn off
+          --lights[i][j];
+          --switched;
+        } else {
+          ++lights[i][j];
+          ++switched;
+        }
       } else {
-        lights[i][j] = 1;
-        ++switched;
+        lights[i][j] += 2;
+        switched += 2;
       }      
     }
   }
@@ -88,7 +93,7 @@ int handle_turn_off(unsigned int** idx_mat, int** lights) {
   for (int i = r0; i <= r1; ++i) {
     for (int j = c0; j <= c1; ++j) {
       if (lights[i][j]) {
-        lights[i][j] = 0;
+        --lights[i][j];
         --switched_off;
       }
     }
@@ -98,7 +103,7 @@ int handle_turn_off(unsigned int** idx_mat, int** lights) {
 }
 
 // This function handles the turn ON operation 
-int handle_turn_on(unsigned int** idx_mat, int** lights) {
+int handle_turn_on(unsigned int** idx_mat, int** lights, bool first_part) {
   
   int switched_on = 0;
   unsigned int r0 = idx_mat[0][0];
@@ -108,9 +113,14 @@ int handle_turn_on(unsigned int** idx_mat, int** lights) {
   
   for (int i = r0; i <= r1; ++i) {
     for (int j = c0; j <= c1; ++j) {
-      if (!lights[i][j]) {
-        lights[i][j] = 1;
-        ++switched_on;
+      if (first_part) {
+        if (!lights[i][j]) {
+          ++lights[i][j];
+          ++switched_on;
+        }
+      } else {
+        ++lights[i][j];
+        ++switched_on;       
       }
     }
   }
@@ -124,6 +134,7 @@ void first_part_solver(FILE* input, int** lights) {
   int lights_on = 0;
   inst curr_inst;
   char* temp_name;
+  bool first_part = true;
 
   unsigned int** from_to;
   from_to = malloc(2 * sizeof(int*));
@@ -163,7 +174,7 @@ void first_part_solver(FILE* input, int** lights) {
     {
     case TOGGLE:
       //handle toggle
-      lights_on += handle_toggle(from_to, lights);
+      lights_on += handle_toggle(from_to, lights, first_part);
       break;
     case TURN_OFF:
       //handle turn off
@@ -171,7 +182,7 @@ void first_part_solver(FILE* input, int** lights) {
       break;
     case TURN_ON:
       //handle turn on
-      lights_on += handle_turn_on(from_to, lights);
+      lights_on += handle_turn_on(from_to, lights, first_part);
       break;
     default:
       printf("Unknown instruction!\n");
@@ -189,12 +200,76 @@ void first_part_solver(FILE* input, int** lights) {
 
 void second_part_solver(FILE* input, int** lights) {
   
+  int light_brightness = 0;
+  inst curr_inst;
+  char* temp_name;
+  bool first_part = false;
+
+  unsigned int** from_to;
+  from_to = malloc(2 * sizeof(int*));
+  for (int i = 0; i < 2; i++) {
+    from_to[i] = malloc(2 * sizeof(int*));
+  }
+
+  char* curr_in_line = malloc(sizeof(char) * MAX_LINE_LENGTH);
+  
+  char** line_tokens;
+  line_tokens = malloc(sizeof(char*) * MAX_LINE_TOKENS);
+  for (int i = 0; i < MAX_LINE_TOKENS; ++i) {
+    line_tokens[i] = malloc(sizeof(char*) * MAX_TOKEN_LENGTH);
+  }
+ 
+  while (fgets(curr_in_line, MAX_LINE_LENGTH, input) != NULL) {
+    split_instruction_line(curr_in_line, line_tokens);
+
+    if (!strcmp(line_tokens[0], temp_name = "toggle")) {
+      curr_inst = TOGGLE;
+    } else if (!strcmp(line_tokens[0], temp_name = "turn") && !strcmp(line_tokens[1], temp_name = "off")) {
+      curr_inst = TURN_OFF; 
+    } else if (!strcmp(line_tokens[0], temp_name = "turn") && !strcmp(line_tokens[1], temp_name = "on")) {
+      curr_inst = TURN_ON;  
+    } else {
+      printf("Unknown instruction read! Program ends...\n");
+      return;
+    }
+    
+    if (curr_inst == TOGGLE) {
+      get_affected_rnc(line_tokens[1], line_tokens[3], from_to);
+    } else {
+      get_affected_rnc(line_tokens[2], line_tokens[4], from_to);
+    }
+ 
+    switch (curr_inst)
+    {
+    case TOGGLE:
+      //handle toggle
+      light_brightness += handle_toggle(from_to, lights, first_part);
+      break;
+    case TURN_OFF:
+      //handle turn off
+      light_brightness += handle_turn_off(from_to, lights);
+      break;
+    case TURN_ON:
+      //handle turn on
+      light_brightness += handle_turn_on(from_to, lights, first_part);
+      break;
+    default:
+      printf("Unknown instruction!\n");
+      break;
+    }    
+  }
+  printf("Following Santa's instructions, %d lights have been turned on.\n", light_brightness);
+
+  free(curr_in_line);
+  free(line_tokens);
+
   return;
 }
 
 int main() {
 
-  bool first_part = true;
+  //bool first_part = true;
+  bool first_part = false;
 
   FILE* input;
   char* input_path = "/home/diego/CProjects/advent-of-code-2015/day6/input.txt";
